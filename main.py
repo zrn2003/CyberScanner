@@ -936,7 +936,7 @@ async def search_scans(target: str = None, status: str = None, limit: int = 50):
             "summary": 1
         }).sort("created_at", -1).limit(limit)
         
-    scans = []
+        scans = []
         async for document in cursor:
             document.pop("_id", None)
             scans.append(document)
@@ -953,21 +953,24 @@ async def search_scans(target: str = None, status: str = None, limit: int = 50):
 @app.delete("/scan/{scan_id}")
 async def delete_scan(scan_id: str):
     """Delete a scan and its results"""
-    # Check if scan exists
-    scan = await get_scan_result(scan_id)
-    if not scan:
-        raise HTTPException(status_code=404, detail="Scan not found")
-    
-            # Delete from MongoDB
+    try:
+        # Check if scan exists
+        scan = await get_scan_result(scan_id)
+        if not scan:
+            raise HTTPException(status_code=404, detail="Scan not found")
+        
+        # Delete from MongoDB
         success = await delete_scan_result(scan_id)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to delete scan from database")
-    
-    # Remove from active scans if present
-    if scan_id in active_scans:
-        del active_scans[scan_id]
-    
-    return {"message": "Scan deleted successfully"}
+        
+        # Remove from active scans if present
+        if scan_id in active_scans:
+            del active_scans[scan_id]
+        
+        return {"message": "Scan deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete scan: {str(e)}")
 
 @app.get("/port-ranges")
 async def get_port_ranges():
